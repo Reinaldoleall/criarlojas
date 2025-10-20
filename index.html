@@ -159,6 +159,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            image-rendering: -webkit-optimize-contrast;
         }
         .image-preview-remove {
             position: absolute;
@@ -298,8 +299,8 @@
                             <input type="file" id="banner-upload-input" accept="image/*" style="display: none;">
                         </div>
                         <div class="compression-info">
-                            <i class="material-icons-outlined">info</i>
-                            <span>Imagens serão automaticamente otimizadas para melhor performance</span>
+                            <i class="material-icons-outlined">high_quality</i>
+                            <span>Imagem será otimizada mantendo alta qualidade (800x400px)</span>
                         </div>
                         <div id="banner-preview-container" class="image-preview-container"></div>
                         <div id="banner-upload-progress" class="upload-progress" style="display: none;">
@@ -353,12 +354,12 @@
                                 <i class="material-icons-outlined">image</i>
                             </div>
                             <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                            <div class="image-upload-hint">Será automaticamente redimensionada para 200x200px</div>
+                            <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com alta qualidade</div>
                             <input type="file" id="product-image-upload-input" accept="image/*" style="display: none;">
                         </div>
                         <div class="compression-info">
-                            <i class="material-icons-outlined">compress</i>
-                            <span>Imagens serão comprimidas para 200x200px (aproximadamente 20-50KB)</span>
+                            <i class="material-icons-outlined">high_quality</i>
+                            <span>Alta qualidade mantida: 200x200px (50-150KB, qualidade visual preservada)</span>
                         </div>
                         <div id="product-image-preview-container" class="image-preview-container"></div>
                         <div id="product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -409,12 +410,12 @@
                             <i class="material-icons-outlined">image</i>
                         </div>
                         <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                        <div class="image-upload-hint">Será automaticamente redimensionada para 200x200px</div>
+                        <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com alta qualidade</div>
                         <input type="file" id="edit-product-image-upload-input" accept="image/*" style="display: none;">
                     </div>
                     <div class="compression-info">
-                        <i class="material-icons-outlined">compress</i>
-                        <span>Imagens serão comprimidas para 200x200px (aproximadamente 20-50KB)</span>
+                        <i class="material-icons-outlined">high_quality</i>
+                        <span>Alta qualidade mantida: 200x200px (50-150KB, qualidade visual preservada)</span>
                     </div>
                     <div id="edit-product-image-preview-container" class="image-preview-container"></div>
                     <div id="edit-product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -533,46 +534,66 @@
             function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
             function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
 
-            // ========== FUNÇÃO DE COMPRESSÃO DE IMAGEM ==========
-            function compressImage(file, maxWidth = 200, maxHeight = 200, quality = 0.7) {
+            // ========== COMPRESSÃO INTELIGENTE COM ALTA QUALIDADE ==========
+            function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
                 return new Promise((resolve, reject) => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     const img = new Image();
                     
                     img.onload = function() {
-                        // Calcular novas dimensões mantendo a proporção
-                        let width = img.width;
-                        let height = img.height;
+                        const originalWidth = img.width;
+                        const originalHeight = img.height;
                         
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height = Math.round((height * maxWidth) / width);
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width = Math.round((width * maxHeight) / height);
-                                height = maxHeight;
-                            }
+                        // Calcular dimensões mantendo aspect ratio
+                        const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+                        let width = Math.round(originalWidth * ratio);
+                        let height = Math.round(originalHeight * ratio);
+                        
+                        // Não aumentar imagens pequenas
+                        if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
+                            width = originalWidth;
+                            height = originalHeight;
                         }
                         
-                        // Configurar canvas
                         canvas.width = width;
                         canvas.height = height;
                         
-                        // Desenhar imagem comprimida
+                        // Configurações de ALTA QUALIDADE
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // Fundo branco para manter qualidade
                         ctx.fillStyle = 'white';
                         ctx.fillRect(0, 0, width, height);
+                        
+                        // Desenhar imagem com alta qualidade
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Converter para Blob
+                        // Qualidade inteligente baseada no caso de uso
+                        let quality = 0.85; // Alta qualidade padrão
+                        
+                        // Ajustar qualidade baseado no tamanho original
+                        if (file.size > 2 * 1024 * 1024) {
+                            quality = 0.82;
+                        } else if (file.size > 1 * 1024 * 1024) {
+                            quality = 0.84;
+                        } else if (file.size < 500 * 1024) {
+                            quality = 0.88; // Mais qualidade para imagens já pequenas
+                        }
+                        
+                        // Mais qualidade para thumbnails de produtos
+                        if (maxWidth <= 200 && maxHeight <= 200) {
+                            quality = Math.min(0.90, quality + 0.03);
+                        }
+                        
                         canvas.toBlob((blob) => {
                             if (blob) {
-                                console.log(`Imagem comprimida: ${file.size} → ${blob.size} bytes (${Math.round((blob.size / file.size) * 100)}%)`);
+                                const compressionRatio = (blob.size / file.size) * 100;
+                                console.log(`🖼️ Compressão HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${width}x${height}, Qualidade: ${quality}`);
                                 resolve(blob);
                             } else {
-                                reject(new Error('Falha na compressão da imagem'));
+                                reject(new Error('Falha na compressão'));
                             }
                         }, 'image/jpeg', quality);
                     };
@@ -582,35 +603,114 @@
                 });
             }
 
-            // ========== UPLOAD OTIMIZADO COM BUFFER ==========
-            function uploadWithBuffer(file, storageRef, metadata = {}, chunkSize = 64 * 1024) {
+            // ========== COMPRESSÃO AVANÇADA COM WEBP (MAIOR QUALIDADE) ==========
+            function compressImageWebP(file, maxWidth = 200, maxHeight = 200) {
                 return new Promise((resolve, reject) => {
-                    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+                    // Verificar suporte a WebP
+                    const canvas = document.createElement('canvas');
+                    const supportsWebP = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
                     
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            // Progresso do upload
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            console.log(`Upload progress: ${progress.toFixed(2)}%`);
-                        },
-                        (error) => {
-                            console.error('Upload error:', error);
-                            reject(error);
-                        },
-                        () => {
-                            // Upload completo
-                            getDownloadURL(uploadTask.snapshot.ref)
-                                .then((downloadURL) => {
-                                    console.log('Upload completed successfully');
-                                    resolve(downloadURL);
-                                })
-                                .catch(reject);
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        const originalWidth = img.width;
+                        const originalHeight = img.height;
+                        
+                        const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+                        let width = Math.round(originalWidth * ratio);
+                        let height = Math.round(originalHeight * ratio);
+                        
+                        if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
+                            width = originalWidth;
+                            height = originalHeight;
                         }
-                    );
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Configurações de máxima qualidade
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const mimeType = supportsWebP ? 'image/webp' : 'image/jpeg';
+                        let quality = supportsWebP ? 0.82 : 0.85; // WebP oferece melhor qualidade com menor tamanho
+                        
+                        // Ajuste fino de qualidade para WebP
+                        if (supportsWebP && maxWidth <= 200) {
+                            quality = 0.80; // WebP mantém qualidade excelente mesmo com compressão
+                        }
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                console.log(`🎯 ${supportsWebP ? 'WebP' : 'JPEG'} HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB, ${width}x${height}, Qualidade: ${quality}`);
+                                resolve(blob);
+                            } else {
+                                // Fallback para JPEG
+                                canvas.toBlob(resolve, 'image/jpeg', 0.85);
+                            }
+                        }, mimeType, quality);
+                    };
+                    
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(file);
                 });
             }
 
-            // ========== CONFIGURAÇÃO DE UPLOAD DE IMAGENS COM COMPRESSÃO ==========
+            // ========== UPLOAD OTIMIZADO ==========
+            function uploadImage(file, progressContainer, progressBar, onUploadComplete) {
+                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+                const imageRef = getStorageRef(`images/${fileName}`);
+                
+                const metadata = {
+                    contentType: 'image/jpeg',
+                    customMetadata: {
+                        'originalSize': file.size.toString(),
+                        'uploadedAt': new Date().toISOString(),
+                        'compressed': 'high-quality'
+                    }
+                };
+                
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                const uploadTask = uploadBytesResumable(imageRef, file, metadata);
+                
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = `${progress}%`;
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        let errorMessage = 'Erro no upload';
+                        
+                        if (error.code === 'storage/unknown') {
+                            errorMessage = 'Erro de conexão. Tente novamente.';
+                        } else if (error.code === 'storage/retry-limit-exceeded') {
+                            errorMessage = 'Tempo limite. Tente uma imagem menor.';
+                        }
+                        
+                        showToast(errorMessage);
+                        progressContainer.style.display = 'none';
+                    },
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            progressContainer.style.display = 'none';
+                            onUploadComplete(downloadURL);
+                            showToast('✅ Imagem enviada com alta qualidade!');
+                        }).catch(error => {
+                            showToast('Erro ao obter URL da imagem');
+                            progressContainer.style.display = 'none';
+                        });
+                    }
+                );
+            }
+
+            // ========== CONFIGURAÇÃO DE UPLOAD COM COMPRESSÃO INTELIGENTE ==========
             function setupImageUpload(uploadAreaId, fileInputId, previewContainerId, progressContainerId, progressBarId, onUploadComplete, options = {}) {
                 const uploadArea = document.getElementById(uploadAreaId);
                 const fileInput = document.getElementById(fileInputId);
@@ -622,13 +722,11 @@
                     compress = true,
                     maxWidth = 200,
                     maxHeight = 200,
-                    quality = 0.7
+                    useWebP = true
                 } = options;
                 
-                // Clique para selecionar arquivo
                 uploadArea.addEventListener('click', () => fileInput.click());
                 
-                // Arrastar e soltar
                 uploadArea.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     uploadArea.classList.add('dragover');
@@ -647,7 +745,6 @@
                     }
                 });
                 
-                // Seleção de arquivo via input
                 fileInput.addEventListener('change', (e) => {
                     if (e.target.files.length) {
                         handleFileSelect(e.target.files[0]);
@@ -660,19 +757,26 @@
                         return;
                     }
                     
-                    // Limpar preview anterior
                     previewContainer.innerHTML = '';
                     
                     try {
                         let processedFile = file;
                         
                         if (compress) {
-                            showToast('Comprimindo imagem...');
-                            processedFile = await compressImage(file, maxWidth, maxHeight, quality);
-                            showToast(`Imagem comprimida: ${Math.round(file.size/1024)}KB → ${Math.round(processedFile.size/1024)}KB`);
+                            showToast('🔄 Otimizando imagem com alta qualidade...');
+                            
+                            if (useWebP) {
+                                processedFile = await compressImageWebP(file, maxWidth, maxHeight);
+                            } else {
+                                processedFile = await compressImageHighQuality(file, maxWidth, maxHeight);
+                            }
+                            
+                            const sizeReduction = Math.round((1 - (processedFile.size / file.size)) * 100);
+                            const finalSizeKB = Math.round(processedFile.size / 1024);
+                            showToast(`✅ Imagem otimizada! ${finalSizeKB}KB (-${sizeReduction}%)`);
                         }
                         
-                        // Criar preview local
+                        // Preview em alta qualidade
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const preview = document.createElement('div');
@@ -695,68 +799,17 @@
                         };
                         reader.readAsDataURL(processedFile);
                         
-                        // Fazer upload para Firebase Storage
                         uploadImage(processedFile, progressContainer, progressBar, onUploadComplete);
                         
                     } catch (error) {
-                        console.error('Erro no processamento da imagem:', error);
-                        showToast('Erro ao processar imagem. Usando original.');
-                        // Fallback: usar arquivo original
+                        console.error('Erro no processamento:', error);
+                        showToast('⚠️ Usando imagem original (qualidade máxima)');
                         uploadImage(file, progressContainer, progressBar, onUploadComplete);
                     }
                 }
             }
             
-            function uploadImage(file, progressContainer, progressBar, onUploadComplete) {
-                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
-                const imageRef = getStorageRef(`images/${fileName}`);
-                
-                const metadata = {
-                    contentType: 'image/jpeg',
-                    customMetadata: {
-                        'originalSize': file.size.toString(),
-                        'uploadedAt': new Date().toISOString(),
-                        'compressed': 'true'
-                    }
-                };
-                
-                progressContainer.style.display = 'block';
-                progressBar.style.width = '0%';
-                
-                const uploadTask = uploadBytesResumable(imageRef, file, metadata);
-                
-                uploadTask.on('state_changed',
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressBar.style.width = `${progress}%`;
-                    },
-                    (error) => {
-                        console.error('Upload error:', error);
-                        let errorMessage = 'Erro no upload da imagem';
-                        
-                        if (error.code === 'storage/unknown') {
-                            errorMessage = 'Erro de conexão. Verifique sua internet.';
-                        } else if (error.code === 'storage/retry-limit-exceeded') {
-                            errorMessage = 'Tempo limite excedido. Tente novamente.';
-                        }
-                        
-                        showToast(errorMessage);
-                        progressContainer.style.display = 'none';
-                    },
-                    () => {
-                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            progressContainer.style.display = 'none';
-                            onUploadComplete(downloadURL);
-                            showToast('Imagem enviada com sucesso!');
-                        }).catch(error => {
-                            showToast('Erro ao obter URL da imagem');
-                            progressContainer.style.display = 'none';
-                        });
-                    }
-                );
-            }
-            
-            // Configurar uploads com compressão
+            // Configurar uploads com alta qualidade
             setupImageUpload(
                 'banner-upload-area', 
                 'banner-upload-input', 
@@ -764,7 +817,12 @@
                 'banner-upload-progress', 
                 'banner-progress-bar', 
                 (url) => { currentBannerUrl = url; },
-                { compress: true, maxWidth: 800, maxHeight: 400, quality: 0.8 }
+                { 
+                    compress: true, 
+                    maxWidth: 800, 
+                    maxHeight: 400, 
+                    useWebP: true
+                }
             );
             
             setupImageUpload(
@@ -774,7 +832,12 @@
                 'product-image-upload-progress', 
                 'product-image-progress-bar', 
                 (url) => { currentProductImageUrl = url; },
-                { compress: true, maxWidth: 200, maxHeight: 200, quality: 0.7 }
+                { 
+                    compress: true, 
+                    maxWidth: 200, 
+                    maxHeight: 200, 
+                    useWebP: true
+                }
             );
             
             setupImageUpload(
@@ -784,7 +847,12 @@
                 'edit-product-image-upload-progress', 
                 'edit-product-image-progress-bar', 
                 (url) => { currentEditProductImageUrl = url; },
-                { compress: true, maxWidth: 200, maxHeight: 200, quality: 0.7 }
+                { 
+                    compress: true, 
+                    maxWidth: 200, 
+                    maxHeight: 200, 
+                    useWebP: true
+                }
             );
 
             function loadStoreData() {
@@ -795,7 +863,6 @@
                     document.getElementById('store-whatsapp').value = data.whatsapp || '';
                     document.getElementById('store-color').value = data.color || '#6750A4';
                     
-                    // Carregar banner se existir
                     if (data.logo) {
                         currentBannerUrl = data.logo;
                         const previewContainer = document.getElementById('banner-preview-container');
@@ -826,7 +893,6 @@
                     populateCategorySelects(data.categories || {});
                     populateCategoryFilter(data.categories || {});
                     
-                    // Trigger label animation for pre-filled fields
                     document.querySelectorAll('input, textarea, select').forEach(el => {
                        if(el.value) el.nextElementSibling?.classList.add('active');
                     });
@@ -892,7 +958,7 @@
                         document.getElementById('product-available').checked = true;
                         document.getElementById('product-image-preview-container').innerHTML = '';
                         currentProductImageUrl = '';
-                        showToast('Produto adicionado com sucesso!');
+                        showToast('✅ Produto adicionado com sucesso!');
                     });
                 } else { showToast('Nome e preço são obrigatórios.'); }
             };
@@ -998,7 +1064,7 @@
                 if (updatedProduct.name && updatedProduct.price > 0) {
                     update(getDbRef(`products/${id}`), updatedProduct).then(() => {
                         editModal.classList.remove('show');
-                        showToast('Produto atualizado!');
+                        showToast('✅ Produto atualizado!');
                     });
                 } else { showToast('Nome e preço são obrigatórios.'); }
             };
