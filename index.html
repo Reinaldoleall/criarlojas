@@ -534,74 +534,66 @@
             function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
             function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
 
-            // ========== COMPRESSÃO INTELIGENTE COM ALTA QUALIDADE ==========
-            function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    
-                    img.onload = function() {
-                        const originalWidth = img.width;
-                        const originalHeight = img.height;
-                        
-                        // Calcular dimensões mantendo aspect ratio
-                        const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
-                        let width = Math.round(originalWidth * ratio);
-                        let height = Math.round(originalHeight * ratio);
-                        
-                        // Não aumentar imagens pequenas
-                        if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
-                            width = originalWidth;
-                            height = originalHeight;
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        // Configurações de ALTA QUALIDADE
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        
-                        // Fundo branco para manter qualidade
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, width, height);
-                        
-                        // Desenhar imagem com alta qualidade
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Qualidade inteligente baseada no caso de uso
-                        let quality = 0.85; // Alta qualidade padrão
-                        
-                        // Ajustar qualidade baseado no tamanho original
-                        if (file.size > 2 * 1024 * 1024) {
-                            quality = 0.82;
-                        } else if (file.size > 1 * 1024 * 1024) {
-                            quality = 0.84;
-                        } else if (file.size < 500 * 1024) {
-                            quality = 0.88; // Mais qualidade para imagens já pequenas
-                        }
-                        
-                        // Mais qualidade para thumbnails de produtos
-                        if (maxWidth <= 200 && maxHeight <= 200) {
-                            quality = Math.min(0.90, quality + 0.03);
-                        }
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                const compressionRatio = (blob.size / file.size) * 100;
-                                console.log(`🖼️ Compressão HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${width}x${height}, Qualidade: ${quality}`);
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Falha na compressão'));
-                            }
-                        }, 'image/jpeg', quality);
-                    };
-                    
-                    img.onerror = reject;
-                    img.src = URL.createObjectURL(file);
-                });
+         function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
+    return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            const originalWidth = img.width;
+            const originalHeight = img.height;
+            
+            const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+            let width = Math.round(originalWidth * ratio);
+            let height = Math.round(originalHeight * ratio);
+            
+            if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
+                width = originalWidth;
+                height = originalHeight;
             }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 🎯 MÁXIMA QUALIDADE - VALORES AJUSTADOS
+            let quality = 0.90; // Aumentado de 0.85 para 0.90
+            
+            // Reduções mínimas apenas para imagens enormes
+            if (file.size > 5 * 1024 * 1024) { // Apenas > 5MB
+                quality = 0.85;
+            } else if (file.size > 2 * 1024 * 1024) {
+                quality = 0.88;
+            } else {
+                quality = 0.92; // Alta qualidade para maioria
+            }
+            
+            // Qualidade extra para produtos
+            if (maxWidth <= 200 && maxHeight <= 200) {
+                quality = Math.min(0.95, quality + 0.05);
+            }
+            
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const compressionRatio = (blob.size / file.size) * 100;
+                    console.log(`🖼️ COMPRESSÃO HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${width}x${height}, Qualidade: ${quality}`);
+                    resolve(blob);
+                } else {
+                    reject(new Error('Falha na compressão'));
+                }
+            }, 'image/jpeg', quality);
+        };
+        
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+    });
+}
 
             // ========== COMPRESSÃO AVANÇADA COM WEBP (MAIOR QUALIDADE) ==========
             function compressImageWebP(file, maxWidth = 200, maxHeight = 200) {
