@@ -3,854 +3,797 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Administração</title>
+    <title>Cadastrar Loja Fixa - Portal de Lojas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
+    
     <style>
         :root {
-            --md-sys-color-primary: #6750A4;
-            --md-sys-color-on-primary: #FFFFFF;
-            --md-sys-color-primary-container: #EADDFF;
-            --md-sys-color-on-primary-container: #21005D;
-            --md-sys-color-secondary: #625B71;
-            --md-sys-color-on-secondary-container: #1D192B;
-            --md-sys-color-error: #B3261E;
-            --md-sys-color-on-error: #FFFFFF;
-            --md-sys-color-background: #F4F5F7;
-            --md-sys-color-surface: #FFFFFF;
-            --md-sys-color-on-surface: #1C1B1F;
-            --md-sys-color-surface-variant: #E7E0EC;
-            --md-sys-color-on-surface-variant: #49454F;
-            --md-sys-color-outline: #79747E;
-            --md-sys-font-family: 'Inter', sans-serif;
-            --md-sys-border-radius: 16px;
-            --md-sys-elevation-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.12);
-            --md-sys-elevation-2: 0 3px 6px rgba(0,0,0,0.10), 0 3px 6px rgba(0,0,0,0.15);
+            --primary-color: #6750A4;
+            --primary-light: #EADDFF;
+            --primary-dark: #21005D;
+            --surface-color: #FFFFFF;
+            --background-color: #F8F9FA;
+            --text-primary: #1C1B1F;
+            --text-secondary: #49454F;
+            --border-color: #CAC4D0;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --border-radius: 12px;
+            --shadow-1: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-2: 0 4px 12px rgba(0,0,0,0.1);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: var(--md-sys-font-family);
-            background-color: var(--md-sys-color-background);
-            color: var(--md-sys-color-on-background);
-            -webkit-font-smoothing: antialiased;
-        }
-        body {
+
+        * {
             margin: 0;
             padding: 0;
-            background-size: contain;
-            height: 100vh;
-            width: 100vw;
+            box-sizing: border-box;
         }
-        /* --- Layout --- */
-        .app-header { background-color: var(--md-sys-color-surface); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; height: 64px; padding: 0 24px; }
-        .top-bar-title { font-size: 1.4rem; font-weight: 700; color: var(--md-sys-color-primary); }
-        .tabs-container { overflow-x: auto; scrollbar-width: none; }
-        .tabs-container::-webkit-scrollbar { display: none; }
-        .tabs-bar { display: flex; padding: 0 16px; border-bottom: 1px solid #eee; }
-        .tab-button { background: none; border: none; cursor: pointer; padding: 16px; font-family: var(--md-sys-font-family); font-size: 0.9rem; font-weight: 500; color: var(--md-sys-color-on-surface-variant); display: flex; align-items: center; gap: 8px; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s ease-in-out; }
-        .tab-button:hover { color: var(--md-sys-color-primary); }
-        .tab-button.active { color: var(--md-sys-color-primary); border-bottom-color: var(--md-sys-color-primary); }
 
-        .page-container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- Components --- */
-        .card { background-color: var(--md-sys-color-surface); padding: 24px; border-radius: var(--md-sys-border-radius); margin-bottom: 24px; box-shadow: var(--md-sys-elevation-1); }
-        .card h2 { font-size: 1.2rem; margin-bottom: 24px; color: var(--md-sys-color-on-surface); border-bottom: 1px solid #eee; padding-bottom: 12px; }
-        .btn, .btn-outlined, .btn-text { font-family: var(--md-sys-font-family); border: none; padding: 10px 24px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
-        .btn { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
-        .btn:hover { filter: brightness(1.1); box-shadow: var(--md-sys-elevation-2); transform: translateY(-1px); }
-        .btn-outlined { background-color: transparent; color: var(--md-sys-color-primary); border: 1px solid var(--md-sys-color-outline); }
-        .btn-outlined:hover { background-color: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent); }
-        .btn-text { color: var(--md-sys-color-primary); background: transparent; }
-        .btn.btn-danger { background-color: var(--md-sys-color-error); }
-
-        /* --- Formulário Elegante --- */
-        .form-field { position: relative; margin-bottom: 24px; }
-        .form-field input, .form-field textarea, .form-field select {
-            width: 100%; padding: 20px 16px 8px 16px; font-size: 1rem; border: 1px solid var(--md-sys-color-outline);
-            border-radius: 8px; background-color: var(--md-sys-color-background); color: var(--md-sys-color-on-surface); transition: border-color 0.2s ease;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
-        .form-field textarea { min-height: 100px; }
-        .form-field label { position: absolute; top: 15px; left: 16px; color: var(--md-sys-color-on-surface-variant); pointer-events: none; transition: all 0.2s ease; }
-        .form-field input:focus, .form-field textarea:focus, .form-field select:focus { outline: none; border-color: var(--md-sys-color-primary); }
-        .form-field input:focus + label, .form-field input:not(:placeholder-shown) + label,
-        .form-field textarea:focus + label, .form-field textarea:not(:placeholder-shown) + label,
-        .form-field select:focus + label, .form-field select:not([value=""]) + label {
-            top: 6px; left: 16px; font-size: 0.75rem; color: var(--md-sys-color-primary);
-        }
-        /* Override for toggle switch label to make it clickable */
-        .form-field label.toggle-switch {
-            position: relative;
-            top: 0;
-            left: 0;
-            pointer-events: auto;
-        }
-        select option { color: var(--md-sys-color-on-surface); }
-        
-        .input-group { display: flex; gap: 8px; align-items: center; }
-        .input-group .form-field { flex-grow: 1; margin-bottom: 0; }
-        
-        /* --- Toggle Switch --- */
-        .toggle-switch-container { display: flex; align-items: center; gap: 12px; }
-        .toggle-switch-container > label { cursor: pointer; } /* Make text label clickable */
-        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--md-sys-color-primary); }
-        input:checked + .slider:before { transform: translateX(20px); }
 
-        /* --- Upload de Imagens --- */
-        .image-upload-container { margin-bottom: 24px; }
-        .image-upload-area {
-            border: 2px dashed var(--md-sys-color-outline);
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary-dark);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .form-container {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 32px;
+            box-shadow: var(--shadow-1);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .required::after {
+            content: " *";
+            color: var(--error-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 24px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            background-color: var(--background-color);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 32px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background-color: var(--md-sys-color-background);
+            background-color: var(--background-color);
         }
-        .image-upload-area:hover {
-            border-color: var(--md-sys-color-primary);
-            background-color: color-mix(in srgb, var(--md-sys-color-primary) 5%, transparent);
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
         }
-        .image-upload-area.dragover {
-            border-color: var(--md-sys-color-primary);
-            background-color: color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent);
+
+        .file-upload.active {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
         }
-        .image-upload-icon {
+
+        .upload-icon {
             font-size: 48px;
-            color: var(--md-sys-color-outline);
+            color: var(--text-secondary);
             margin-bottom: 16px;
         }
-        .image-upload-text {
-            color: var(--md-sys-color-on-surface-variant);
+
+        .file-upload p {
+            color: var(--text-secondary);
             margin-bottom: 8px;
         }
-        .image-upload-hint {
-            font-size: 0.8rem;
-            color: var(--md-sys-color-outline);
+
+        .file-upload small {
+            color: var(--text-secondary);
+            opacity: 0.7;
         }
-        .image-preview-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
+
+        #imagePreview {
             margin-top: 16px;
+            text-align: center;
         }
-        .image-preview {
-            position: relative;
-            width: 120px;
-            height: 120px;
+
+        #imagePreview img {
+            max-width: 100%;
+            max-height: 200px;
             border-radius: 8px;
-            overflow: hidden;
-            box-shadow: var(--md-sys-elevation-1);
+            box-shadow: var(--shadow-1);
         }
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .image-preview-remove {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            background-color: rgba(0,0,0,0.7);
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+
+        .color-picker {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 12px;
+        }
+
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
             cursor: pointer;
-            font-size: 16px;
         }
-        .upload-progress {
-            margin-top: 12px;
+
+        .payment-methods, .delivery-options {
+            margin-top: 16px;
+        }
+
+        .method-item, .option-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--background-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .method-item span, .option-item span {
+            font-weight: 500;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--error-color);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .remove-btn:hover {
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+
+        .add-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .submit-btn {
             width: 100%;
-            height: 6px;
-            background-color: var(--md-sys-color-surface-variant);
-            border-radius: 3px;
-            overflow: hidden;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 16px;
         }
-        .upload-progress-bar {
-            height: 100%;
-            background-color: var(--md-sys-color-primary);
-            transition: width 0.3s ease;
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-2);
         }
 
-        /* --- Login Page --- */
-        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; background-color: var(--md-sys-color-background); }
-        .login-card { width: 100%; max-width: 420px; padding: 40px; text-align: center; }
-        .login-card h2 { font-size: 1.8rem; margin-bottom: 24px; color: var(--md-sys-color-on-surface); }
+        .submit-btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
 
-        /* --- Admin Product Grid --- */
-        .admin-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-        .admin-product-card { position: relative; background-color: var(--md-sys-color-surface); border-radius: var(--md-sys-border-radius); overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.2s ease; }
-        .admin-product-card:hover { box-shadow: var(--md-sys-elevation-2); }
-        .admin-product-card__image { width: 100%; padding-top: 75%; background-size: cover; background-position: center; background-color: var(--md-sys-color-background); }
-        .admin-product-card__info { padding: 16px; flex-grow: 1; }
-        .admin-product-card__name { font-weight: 500; font-size: 1.1rem; }
-        .admin-product-card__price { color: var(--md-sys-color-primary); font-weight: 700; margin-top: 8px; }
-        .admin-product-card__actions { padding: 8px; display: flex; gap: 8px; border-top: 1px solid #eee; }
-        .admin-product-card__actions .btn-text { flex: 1; }
-        .outofstock-badge { position: absolute; top: 12px; right: 12px; background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); padding: 4px 10px; font-size: 0.75rem; font-weight: 500; border-radius: 12px; z-index: 2; }
-        .product-filters { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: none;
+        }
 
-        /* --- Tags & Modal & Toast --- */
-        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
-        .tag { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
-        .tag .delete-btn { cursor: pointer; font-size: 1rem; }
-        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
-        .modal-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
-        .modal-container { background: var(--md-sys-color-surface); border-radius: 28px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: var(--md-sys-elevation-2); transform: scale(0.95); animation: zoomIn 0.3s ease forwards; }
-        @keyframes zoomIn { to { transform: scale(1); } }
-        .modal-header { padding: 24px; font-size: 1.4rem; }
-        .modal-body { padding: 0 24px 24px; overflow-y: auto; flex-grow: 1; }
-        .modal-footer { padding: 16px 24px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #eee; }
-        .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .toast { background-color: #323232; color: #FFFFFF; padding: 12px 20px; border-radius: 20px; font-size: 0.9rem; box-shadow: var(--md-sys-elevation-2); animation: toast-in 0.5s ease; }
-        @keyframes toast-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .alert.success {
+            background: #E8F5E8;
+            color: #2E7D32;
+            border: 1px solid #C8E6C9;
+        }
 
-        /* --- Responsive --- */
-        @media (min-width: 768px) {
-            .product-filters { flex-direction: row; align-items: flex-end; }
-            .product-filters .form-field { flex-grow: 1; }
+        .alert.error {
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #FFCDD2;
+        }
+
+        .fixed-stores-list {
+            margin-top: 32px;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow-1);
+        }
+
+        .store-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .store-info h3 {
+            margin-bottom: 4px;
+        }
+
+        .store-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .delete-store-btn {
+            background: var(--error-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+            
+            .form-container {
+                padding: 24px 20px;
+            }
+            
+            .store-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .delete-store-btn {
+                align-self: flex-end;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="auth-container" class="login-container">
-        <div class="card login-card">
-            <div id="login-form">
-                <h2>Acessar Painel</h2>
-                <div class="form-field"><input type="email" id="login-email" placeholder=" "><label for="login-email">E-mail</label></div>
-                <div class="form-field"><input type="password" id="login-password" placeholder=" "><label for="login-password">Senha</label></div>
-                <button id="login-btn" class="btn" style="width: 100%;">Entrar</button>
-                <button id="show-register-btn" class="btn-text" style="margin-top: 10px;">Criar Conta</button>
-            </div>
-            <div id="register-form" style="display: none;">
-                <h2>Criar Nova Conta</h2>
-                <div class="form-field"><input type="email" id="register-email" placeholder=" "><label for="register-email">E-mail</label></div>
-                <div class="form-field"><input type="password" id="register-password" placeholder=" "><label for="register-password">Senha</label></div>
-                <button id="register-btn" class="btn" style="width: 100%;">Cadastrar</button>
-                <button id="show-login-btn" class="btn-text" style="margin-top: 10px;">Já tenho conta</button>
-            </div>
+    <div class="container">
+        <div class="header">
+            <h1>Cadastrar Loja Fixa</h1>
+            <p>Adicione uma loja permanente ao portal de lojas</p>
         </div>
-    </div>
-    
-    <div id="app-container" style="display: none;">
-        <header class="app-header">
-            <div class="top-bar">
-                <span class="top-bar-title">Meu Painel</span>
-                <button id="logout-btn" class="btn-outlined">Sair</button>
-            </div>
-            <div class="tabs-container">
-                <nav id="tabs-bar" class="tabs-bar">
-                    <button class="tab-button active" data-tab="config"><i class="material-icons-outlined">tune</i> Configurações</button>
-                    <button class="tab-button" data-tab="categories"><i class="material-icons-outlined">category</i> Categorias</button>
-                    <button class="tab-button" data-tab="products"><i class="material-icons-outlined">inventory_2</i> Produtos</button>
-                    <button class="tab-button" id="view-store-btn"><i class="material-icons-outlined">storefront</i> Visualizar Loja</button>
-                </nav>
-            </div>
-        </header>
 
-        <main class="page-container">
-            <!-- Configurações Tab -->
-            <section id="config-tab" class="tab-content active">
-                <div class="card">
-                    <h2>Informações da Loja</h2>
-                    <div class="form-field"><input type="text" id="store-name" placeholder=" "><label for="store-name">Nome da Loja</label></div>
-                    <div class="form-field"><textarea id="store-description" placeholder=" "></textarea><label for="store-description">Descrição da Loja</label></div>
-                    
-                    <!-- Upload do Banner Principal -->
-                    <div class="image-upload-container">
-                        <label style="position:static; font-size:0.75rem; margin-bottom:4px; display:block;">Banner Principal</label>
-                        <div id="banner-upload-area" class="image-upload-area">
-                            <div class="image-upload-icon">
-                                <i class="material-icons-outlined">image</i>
-                            </div>
-                            <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                            <div class="image-upload-hint">Tamanho recomendado: 1200x400px</div>
-                            <input type="file" id="banner-upload-input" accept="image/*" style="display: none;">
+        <div id="alert" class="alert"></div>
+
+        <div class="form-container">
+            <form id="storeForm">
+                <div class="form-group">
+                    <label for="storeName" class="required">Nome da Loja</label>
+                    <input type="text" id="storeName" class="form-control" placeholder="Ex: Magazine Luiza" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="storeDescription" class="required">Descrição da Loja</label>
+                    <textarea id="storeDescription" class="form-control" placeholder="Descreva sua loja, produtos e diferenciais..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="storeLogo" class="required">Logo/Banner da Loja</label>
+                    <div class="file-upload" id="logoUpload">
+                        <div class="upload-icon">
+                            <span class="material-icons-outlined">image</span>
                         </div>
-                        <div id="banner-preview-container" class="image-preview-container"></div>
-                        <div id="banner-upload-progress" class="upload-progress" style="display: none;">
-                            <div id="banner-progress-bar" class="upload-progress-bar"></div>
-                        </div>
+                        <p>Clique ou arraste uma imagem aqui</p>
+                        <small>Tamanho recomendado: 1200x400px</small>
+                        <input type="file" id="storeLogo" accept="image/*" style="display: none;" required>
                     </div>
-                    
-                    <div class="form-field"><input type="tel" id="store-whatsapp" placeholder=" "><label for="store-whatsapp">Nº do WhatsApp (ex: 5521999999999)</label></div>
-                    <div class="form-field"><label style="position:static; font-size:0.75rem; margin-bottom:4px;">Cor Principal da Loja</label><input type="color" id="store-color" value="#6750A4" style="width:100%; height:48px; padding:5px; border-radius:8px;"></div>
-                    <button id="save-store-btn" class="btn">Salvar Informações</button>
+                    <div id="imagePreview"></div>
                 </div>
-                <div class="card">
-                    <h2>Formas de Pagamento</h2>
-                    <div class="form-group input-group"><div class="form-field"><input type="text" id="new-payment-method-input" placeholder=" "><label for="new-payment-method-input">Ex: Pix</label></div><button id="add-payment-method-btn" class="btn">Adicionar</button></div>
-                    <br>
-                    <div id="payment-methods-list" class="tag-list"></div>
+
+                <div class="form-group">
+                    <label for="storeUrl" class="required">URL da Loja</label>
+                    <input type="url" id="storeUrl" class="form-control" placeholder="https://www.sualoja.com.br" required>
                 </div>
-                <div class="card">
-                    <h2>Opções de Entrega</h2>
-                    <div class="form-group input-group"><div class="form-field"><input type="text" id="new-delivery-option-input" placeholder=" "><label for="new-delivery-option-input">Ex: Entrega via Motoboy</label></div><button id="add-delivery-option-btn" class="btn">Adicionar</button></div>
-                    <br>
-                    <div id="delivery-options-list" class="tag-list"></div>
+
+                <div class="form-group">
+                    <label for="storeCategory" class="required">Categoria</label>
+                    <select id="storeCategory" class="form-control" required>
+                        <option value="">Selecione uma categoria</option>
+                        <option value="moda">Moda e Vestuário</option>
+                        <option value="eletronicos">Eletrônicos</option>
+                        <option value="casa">Casa e Decoração</option>
+                        <option value="beleza">Beleza e Cosméticos</option>
+                        <option value="alimentacao">Alimentação</option>
+                        <option value="esportes">Esportes e Lazer</option>
+                        <option value="livros">Livros e Educação</option>
+                        <option value="outros">Outros</option>
+                    </select>
                 </div>
-            </section>
-            
-            <!-- Categorias Tab -->
-            <section id="categories-tab" class="tab-content">
-                <div class="card">
-                    <h2>Adicionar Nova Categoria</h2>
-                    <div class="form-group input-group"><div class="form-field"><input type="text" id="new-category-name" placeholder=" "><label for="new-category-name">Nome da Categoria</label></div><button id="add-category-btn" class="btn">Adicionar</button></div>
-                </div>
-                <div class="card">
-                    <h2>Categorias Existentes</h2>
-                    <div id="categories-list" class="tag-list"></div>
-                </div>
-            </section>
-            
-            <!-- Produtos Tab -->
-            <section id="products-tab" class="tab-content">
-                <div class="card">
-                    <h2>Adicionar Novo Produto</h2>
-                    <div class="form-field"><input type="text" id="product-name" placeholder=" "><label for="product-name">Nome do Produto</label></div>
-                    <div class="form-field"><textarea id="product-description" placeholder=" "></textarea><label for="product-description">Descrição</label></div>
-                    <div class="form-field"><input type="number" id="product-price" step="0.01" placeholder=" "><label for="product-price">Preço (R$)</label></div>
-                    
-                    <!-- Upload de Imagem do Produto -->
-                    <div class="image-upload-container">
-                        <label style="position:static; font-size:0.75rem; margin-bottom:4px; display:block;">Imagem do Produto</label>
-                        <div id="product-image-upload-area" class="image-upload-area">
-                            <div class="image-upload-icon">
-                                <i class="material-icons-outlined">image</i>
-                            </div>
-                            <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                            <div class="image-upload-hint">Tamanho recomendado: 600x600px</div>
-                            <input type="file" id="product-image-upload-input" accept="image/*" style="display: none;">
-                        </div>
-                        <div id="product-image-preview-container" class="image-preview-container"></div>
-                        <div id="product-image-upload-progress" class="upload-progress" style="display: none;">
-                            <div id="product-image-progress-bar" class="upload-progress-bar"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storeColor">Cor da Loja</label>
+                        <div class="color-picker">
+                            <div class="color-preview" id="colorPreview" style="background-color: #6750A4;"></div>
+                            <input type="color" id="storeColor" class="form-control" value="#6750A4" style="padding: 0; height: 40px;">
                         </div>
                     </div>
-                    
-                    <div class="form-field">
-                        <select id="product-category" value=""><option value="" disabled selected></option></select>
-                        <label for="product-category">Categoria</label>
-                    </div>
-                    <div class="form-field toggle-switch-container">
-                        <label class="toggle-switch" for="product-available"><input type="checkbox" id="product-available" checked><span class="slider"></span></label>
-                        <label for="product-available">Produto disponível?</label>
-                    </div>
-                    <button id="add-product-btn" class="btn">Adicionar Produto</button>
-                </div>
-                <div class="card">
-                    <h2>Seus Produtos</h2>
-                    <div class="product-filters">
-                        <div class="form-field"><input type="text" id="admin-product-search" placeholder=" "><label for="admin-product-search">Buscar por nome</label></div>
-                        <div class="form-field">
-                            <select id="admin-product-category-filter" value="all"><option value="all" disabled selected></option></select>
-                            <label for="admin-product-category-filter">Filtrar por categoria</label>
-                        </div>
-                    </div>
-                    <div id="products-list" class="admin-products-grid"></div>
-                </div>
-            </section>
-        </main>
-    </div>
-    
-    <!-- Modal de Edição -->
-    <div id="edit-product-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">Editar Produto</div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-product-id">
-                <div class="form-field"><input type="text" id="edit-product-name" placeholder=" "><label for="edit-product-name">Nome</label></div>
-                <div class="form-field"><textarea id="edit-product-description" placeholder=" "></textarea><label for="edit-product-description">Descrição</label></div>
-                <div class="form-field"><input type="number" id="edit-product-price" step="0.01" placeholder=" "><label for="edit-product-price">Preço (R$)</label></div>
-                
-                <!-- Upload de Imagem na Edição -->
-                <div class="image-upload-container">
-                    <label style="position:static; font-size:0.75rem; margin-bottom:4px; display:block;">Imagem do Produto</label>
-                    <div id="edit-product-image-upload-area" class="image-upload-area">
-                        <div class="image-upload-icon">
-                            <i class="material-icons-outlined">image</i>
-                        </div>
-                        <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                        <div class="image-upload-hint">Tamanho recomendado: 600x600px</div>
-                        <input type="file" id="edit-product-image-upload-input" accept="image/*" style="display: none;">
-                    </div>
-                    <div id="edit-product-image-preview-container" class="image-preview-container"></div>
-                    <div id="edit-product-image-upload-progress" class="upload-progress" style="display: none;">
-                        <div id="edit-product-image-progress-bar" class="upload-progress-bar"></div>
+
+                    <div class="form-group">
+                        <label for="storePriority">Prioridade de Exibição</label>
+                        <select id="storePriority" class="form-control">
+                            <option value="high">Alta (Sempre no topo)</option>
+                            <option value="medium" selected>Média</option>
+                            <option value="low">Baixa</option>
+                        </select>
                     </div>
                 </div>
-                
-                <div class="form-field">
-                    <select id="edit-product-category"><option value="" disabled selected></option></select>
-                    <label for="edit-product-category">Categoria</label>
+
+                <div class="form-group">
+                    <label>Formas de Pagamento</label>
+                    <div id="paymentMethodsList" class="payment-methods">
+                        <!-- Métodos serão adicionados aqui -->
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="newPaymentMethod" class="form-control" placeholder="Ex: Pix, Cartão de Crédito...">
+                        <button type="button" class="add-btn" id="addPaymentMethod">
+                            <span class="material-icons-outlined">add</span>
+                            Adicionar
+                        </button>
+                    </div>
                 </div>
-                <div class="form-field toggle-switch-container">
-                    <label class="toggle-switch" for="edit-product-available"><input type="checkbox" id="edit-product-available"><span class="slider"></span></label>
-                    <label for="edit-product-available">Produto disponível?</label>
+
+                <div class="form-group">
+                    <label>Opções de Entrega</label>
+                    <div id="deliveryOptionsList" class="delivery-options">
+                        <!-- Opções serão adicionadas aqui -->
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="newDeliveryOption" class="form-control" placeholder="Ex: Entrega Grátis, Retirada...">
+                        <button type="button" class="add-btn" id="addDeliveryOption">
+                            <span class="material-icons-outlined">add</span>
+                            Adicionar
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button id="cancel-edit-btn" class="btn-text">Cancelar</button>
-                <button id="save-edit-btn" class="btn">Salvar Alterações</button>
+
+                <div class="form-group">
+                    <label for="storeTags">Tags/Palavras-chave</label>
+                    <input type="text" id="storeTags" class="form-control" placeholder="Ex: eletrônicos, tecnologia, gadgets">
+                    <small>Separe as tags por vírgula</small>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span id="submitText">Cadastrar Loja Fixa</span>
+                    <span id="submitLoading" style="display: none;">Cadastrando...</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Lista de Lojas Fixas Cadastradas -->
+        <div class="fixed-stores-list">
+            <h2>Lojas Fixas Cadastradas</h2>
+            <div id="storesList">
+                <!-- Lojas serão carregadas aqui -->
             </div>
         </div>
     </div>
 
-    <!-- Modal de Confirmação -->
-    <div id="confirm-modal" class="modal-overlay">
-        <div class="modal-container" style="max-width: 400px;">
-            <div class="modal-header">Confirmar Ação</div>
-            <div class="modal-body"><p id="confirm-modal-text">Você tem certeza?</p></div>
-            <div class="modal-footer">
-                <button id="confirm-modal-cancel" class="btn-text">Cancelar</button>
-                <button id="confirm-modal-ok" class="btn btn-danger">Confirmar</button>
-            </div>
-        </div>
-    </div>
-    
-    <div class="toast-container" id="toast-container"></div>
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
+            authDomain: "marketplaceconnect-af26d.firebaseapp.com",
+            databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
+            projectId: "marketplaceconnect-af26d",
+            storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
+            messagingSenderId: "768552546759",
+            appId: "1:768552546759:web:4367fc4a161ecf90c469e2",
+            measurementId: "G-7HHR78MHDP"
+        };
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const storage = firebase.storage();
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Firebase configuration
-            const firebaseConfig = {
-                apiKey: "AIzaSyD8FxHqt1g2V-mmureRPQyYe6QCuRSieGI",
-                authDomain: "marketplaceconnect-af26d.firebaseapp.com",
-                databaseURL: "https://marketplaceconnect-af26d-default-rtdb.firebaseio.com",
-                projectId: "marketplaceconnect-af26d",
-                storageBucket: "marketplaceconnect-af26d.firebasestorage.app",
-                messagingSenderId: "768552546759",
-                appId: "1:768552546759:web:4367fc4a161ecf90c469e2",
-                measurementId: "G-7HHR78MHDP"
-            };
+            // Elementos do DOM
+            const storeForm = document.getElementById('storeForm');
+            const logoUpload = document.getElementById('logoUpload');
+            const storeLogo = document.getElementById('storeLogo');
+            const imagePreview = document.getElementById('imagePreview');
+            const colorPreview = document.getElementById('colorPreview');
+            const storeColor = document.getElementById('storeColor');
+            const alertDiv = document.getElementById('alert');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitLoading = document.getElementById('submitLoading');
+            const storesList = document.getElementById('storesList');
             
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getDatabase(app);
-            const storage = getStorage(app);
+            // Listas de métodos de pagamento e entrega
+            const paymentMethods = [];
+            const deliveryOptions = [];
 
-            let currentUser = null;
-            let allAdminProducts = [];
-            const authContainer = document.getElementById('auth-container');
-            const appContainer = document.getElementById('app-container');
+            // Carregar lojas existentes
+            loadFixedStores();
 
-            // Variáveis para armazenar URLs de imagens
-            let currentBannerUrl = '';
-            let currentProductImageUrl = '';
-            let currentEditProductImageUrl = '';
-
-            const showToast = (message, duration = 3000) => {
-                const toastContainer = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                toast.className = 'toast';
-                toast.textContent = message;
-                toastContainer.appendChild(toast);
-                setTimeout(() => toast.remove(), duration);
-            };
-
-            const confirmAction = (text, onConfirm) => {
-                const modal = document.getElementById('confirm-modal');
-                document.getElementById('confirm-modal-text').textContent = text;
-                modal.classList.add('show');
-                const okBtn = document.getElementById('confirm-modal-ok');
-                const cancelBtn = document.getElementById('confirm-modal-cancel');
-                const close = () => modal.classList.remove('show');
-                okBtn.onclick = () => { onConfirm(); close(); };
-                cancelBtn.onclick = close;
-            };
-
-            onAuthStateChanged(auth, user => {
-                currentUser = user;
-                authContainer.style.display = user ? 'none' : 'flex';
-                appContainer.style.display = user ? 'block' : 'none';
-                if (user) loadStoreData();
+            // Upload de imagem
+            logoUpload.addEventListener('click', () => storeLogo.click());
+            logoUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                logoUpload.classList.add('active');
+            });
+            logoUpload.addEventListener('dragleave', () => {
+                logoUpload.classList.remove('active');
+            });
+            logoUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                logoUpload.classList.remove('active');
+                if (e.dataTransfer.files.length) {
+                    storeLogo.files = e.dataTransfer.files;
+                    previewImage(e.dataTransfer.files[0]);
+                }
+            });
+            storeLogo.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    previewImage(e.target.files[0]);
+                }
             });
 
-            document.getElementById('show-register-btn').onclick = () => { document.getElementById('login-form').style.display = 'none'; document.getElementById('register-form').style.display = 'block'; };
-            document.getElementById('show-login-btn').onclick = () => { document.getElementById('login-form').style.display = 'block'; document.getElementById('register-form').style.display = 'none'; };
-            document.getElementById('login-btn').onclick = () => signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value).catch(e => showToast(`Erro: ${e.code}`));
-            document.getElementById('register-btn').onclick = () => createUserWithEmailAndPassword(auth, document.getElementById('register-email').value, document.getElementById('register-password').value).catch(e => showToast(`Erro: ${e.code}`));
-            document.getElementById('logout-btn').onclick = () => signOut(auth);
-            document.getElementById('view-store-btn').onclick = () => window.open(`loja.html?userId=${currentUser.uid}`, '_blank');
-            
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', () => {
-                    if(button.id === 'view-store-btn') return;
-                    document.querySelector('.tab-button.active').classList.remove('active');
-                    button.classList.add('active');
-                    document.querySelector('.tab-content.active').classList.remove('active');
-                    document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
-                });
+            function previewImage(file) {
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            // Preview da cor
+            storeColor.addEventListener('input', (e) => {
+                colorPreview.style.backgroundColor = e.target.value;
             });
 
-            function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
-            function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
+            // Adicionar método de pagamento
+            document.getElementById('addPaymentMethod').addEventListener('click', () => {
+                const input = document.getElementById('newPaymentMethod');
+                const method = input.value.trim();
+                
+                if (method && !paymentMethods.includes(method)) {
+                    paymentMethods.push(method);
+                    updatePaymentMethodsList();
+                    input.value = '';
+                }
+            });
 
-            // Configuração de upload de imagens
-            function setupImageUpload(uploadAreaId, fileInputId, previewContainerId, progressContainerId, progressBarId, onUploadComplete) {
-                const uploadArea = document.getElementById(uploadAreaId);
-                const fileInput = document.getElementById(fileInputId);
-                const previewContainer = document.getElementById(previewContainerId);
-                const progressContainer = document.getElementById(progressContainerId);
-                const progressBar = document.getElementById(progressBarId);
+            // Adicionar opção de entrega
+            document.getElementById('addDeliveryOption').addEventListener('click', () => {
+                const input = document.getElementById('newDeliveryOption');
+                const option = input.value.trim();
                 
-                // Clique para selecionar arquivo
-                uploadArea.addEventListener('click', () => fileInput.click());
-                
-                // Arrastar e soltar
-                uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.add('dragover');
+                if (option && !deliveryOptions.includes(option)) {
+                    deliveryOptions.push(option);
+                    updateDeliveryOptionsList();
+                    input.value = '';
+                }
+            });
+
+            function updatePaymentMethodsList() {
+                const list = document.getElementById('paymentMethodsList');
+                list.innerHTML = paymentMethods.map(method => `
+                    <div class="method-item">
+                        <span>${method}</span>
+                        <button type="button" class="remove-btn" data-method="${method}">
+                            <span class="material-icons-outlined">delete</span>
+                        </button>
+                    </div>
+                `).join('');
+
+                // Adicionar eventos de remoção
+                list.querySelectorAll('.remove-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const method = e.target.closest('.remove-btn').dataset.method;
+                        const index = paymentMethods.indexOf(method);
+                        if (index > -1) {
+                            paymentMethods.splice(index, 1);
+                            updatePaymentMethodsList();
+                        }
+                    });
                 });
-                
-                uploadArea.addEventListener('dragleave', () => {
-                    uploadArea.classList.remove('dragover');
+            }
+
+            function updateDeliveryOptionsList() {
+                const list = document.getElementById('deliveryOptionsList');
+                list.innerHTML = deliveryOptions.map(option => `
+                    <div class="option-item">
+                        <span>${option}</span>
+                        <button type="button" class="remove-btn" data-option="${option}">
+                            <span class="material-icons-outlined">delete</span>
+                        </button>
+                    </div>
+                `).join('');
+
+                // Adicionar eventos de remoção
+                list.querySelectorAll('.remove-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const option = e.target.closest('.remove-btn').dataset.option;
+                        const index = deliveryOptions.indexOf(option);
+                        if (index > -1) {
+                            deliveryOptions.splice(index, 1);
+                            updateDeliveryOptionsList();
+                        }
+                    });
                 });
+            }
+
+            // Submissão do formulário
+            storeForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
                 
-                uploadArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.remove('dragover');
-                    if (e.dataTransfer.files.length) {
-                        fileInput.files = e.dataTransfer.files;
-                        handleFileSelect(e.dataTransfer.files[0]);
-                    }
-                });
+                // Validação básica
+                const storeName = document.getElementById('storeName').value.trim();
+                const storeDescription = document.getElementById('storeDescription').value.trim();
+                const storeUrl = document.getElementById('storeUrl').value.trim();
+                const storeCategory = document.getElementById('storeCategory').value;
                 
-                // Seleção de arquivo via input
-                fileInput.addEventListener('change', (e) => {
-                    if (e.target.files.length) {
-                        handleFileSelect(e.target.files[0]);
-                    }
-                });
+                if (!storeName || !storeDescription || !storeUrl || !storeCategory) {
+                    showAlert('Por favor, preencha todos os campos obrigatórios.', 'error');
+                    return;
+                }
+
+                if (!storeLogo.files.length) {
+                    showAlert('Por favor, selecione uma imagem para a loja.', 'error');
+                    return;
+                }
+
+                await submitStoreData();
+            });
+
+            async function submitStoreData() {
+                showLoading(true);
                 
-                function handleFileSelect(file) {
-                    if (!file.type.match('image.*')) {
-                        showToast('Por favor, selecione apenas imagens.');
+                try {
+                    const storeName = document.getElementById('storeName').value;
+                    const storeDescription = document.getElementById('storeDescription').value;
+                    const storeUrl = document.getElementById('storeUrl').value;
+                    const storeCategory = document.getElementById('storeCategory').value;
+                    const storeColor = document.getElementById('storeColor').value;
+                    const storePriority = document.getElementById('storePriority').value;
+                    const storeTags = document.getElementById('storeTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
+
+                    // Upload da imagem
+                    const logoFile = storeLogo.files[0];
+                    const logoUrl = await uploadImage(logoFile, storeName);
+
+                    // Preparar dados da loja
+                    const storeData = {
+                        name: storeName,
+                        description: storeDescription,
+                        url: storeUrl,
+                        category: storeCategory,
+                        color: storeColor,
+                        priority: storePriority,
+                        paymentMethods: paymentMethods,
+                        deliveryOptions: deliveryOptions,
+                        tags: storeTags,
+                        logo: logoUrl,
+                        isFixed: true,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    // Salvar no Firebase
+                    const storeId = generateStoreId(storeName);
+                    await database.ref(`fixedStores/${storeId}`).set(storeData);
+                    
+                    showAlert('Loja fixa cadastrada com sucesso!', 'success');
+                    storeForm.reset();
+                    paymentMethods.length = 0;
+                    deliveryOptions.length = 0;
+                    updatePaymentMethodsList();
+                    updateDeliveryOptionsList();
+                    imagePreview.innerHTML = '';
+                    
+                    // Recarregar lista de lojas
+                    loadFixedStores();
+                    
+                } catch (error) {
+                    console.error('Erro ao cadastrar loja:', error);
+                    showAlert('Erro ao cadastrar loja: ' + error.message, 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            async function uploadImage(file, storeName) {
+                const fileName = `fixedStores/${Date.now()}_${storeName.replace(/\s+/g, '_')}_${file.name}`;
+                const storageRef = storage.ref().child(fileName);
+                const snapshot = await storageRef.put(file);
+                const downloadUrl = await snapshot.ref.getDownloadURL();
+                return downloadUrl;
+            }
+
+            function generateStoreId(storeName) {
+                return storeName
+                    .toLowerCase()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^a-z0-9-]/g, '')
+                    + '-' + Date.now();
+            }
+
+            async function loadFixedStores() {
+                try {
+                    const snapshot = await database.ref('fixedStores').once('value');
+                    const stores = snapshot.val();
+                    
+                    storesList.innerHTML = '';
+                    
+                    if (!stores) {
+                        storesList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma loja fixa cadastrada ainda.</p>';
                         return;
                     }
                     
-                    // Limpar preview anterior
-                    previewContainer.innerHTML = '';
-                    
-                    // Criar preview local
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        preview.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <div class="image-preview-remove">
-                                <i class="material-icons-outlined">close</i>
+                    Object.entries(stores).forEach(([storeId, store]) => {
+                        const storeItem = document.createElement('div');
+                        storeItem.className = 'store-item';
+                        storeItem.innerHTML = `
+                            <div class="store-info">
+                                <h3>${store.name}</h3>
+                                <p>${store.description}</p>
+                                <small>Categoria: ${store.category} | URL: ${store.url}</small>
                             </div>
+                            <button class="delete-store-btn" data-storeid="${storeId}">
+                                Excluir
+                            </button>
                         `;
-                        
-                        preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            preview.remove();
-                            fileInput.value = '';
-                            onUploadComplete(''); // Limpar URL
-                        });
-                        
-                        previewContainer.appendChild(preview);
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    // Fazer upload para Firebase Storage
-                    uploadImage(file, progressContainer, progressBar, onUploadComplete);
-                }
-            }
-            
-            function uploadImage(file, progressContainer, progressBar, onUploadComplete) {
-                const fileName = `${Date.now()}_${file.name}`;
-                const imageRef = getStorageRef(`images/${fileName}`);
-                const uploadTask = uploadBytesResumable(imageRef, file);
-                
-                progressContainer.style.display = 'block';
-                progressBar.style.width = '0%';
-                
-                uploadTask.on('state_changed',
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressBar.style.width = `${progress}%`;
-                    },
-                    (error) => {
-                        showToast('Erro no upload da imagem: ' + error.message);
-                        progressContainer.style.display = 'none';
-                    },
-                    () => {
-                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                            progressContainer.style.display = 'none';
-                            onUploadComplete(downloadURL);
-                            showToast('Imagem enviada com sucesso!');
-                        });
-                    }
-                );
-            }
-            
-            // Configurar uploads
-            setupImageUpload(
-                'banner-upload-area', 
-                'banner-upload-input', 
-                'banner-preview-container', 
-                'banner-upload-progress', 
-                'banner-progress-bar', 
-                (url) => { currentBannerUrl = url; }
-            );
-            
-            setupImageUpload(
-                'product-image-upload-area', 
-                'product-image-upload-input', 
-                'product-image-preview-container', 
-                'product-image-upload-progress', 
-                'product-image-progress-bar', 
-                (url) => { currentProductImageUrl = url; }
-            );
-            
-            setupImageUpload(
-                'edit-product-image-upload-area', 
-                'edit-product-image-upload-input', 
-                'edit-product-image-preview-container', 
-                'edit-product-image-upload-progress', 
-                'edit-product-image-progress-bar', 
-                (url) => { currentEditProductImageUrl = url; }
-            );
-
-            function loadStoreData() {
-                onValue(getDbRef(), snapshot => {
-                    const data = snapshot.val() || {};
-                    document.getElementById('store-name').value = data.name || '';
-                    document.getElementById('store-description').value = data.description || '';
-                    document.getElementById('store-whatsapp').value = data.whatsapp || '';
-                    document.getElementById('store-color').value = data.color || '#6750A4';
-                    
-                    // Carregar banner se existir
-                    if (data.logo) {
-                        currentBannerUrl = data.logo;
-                        const previewContainer = document.getElementById('banner-preview-container');
-                        previewContainer.innerHTML = '';
-                        const preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        preview.innerHTML = `
-                            <img src="${data.logo}" alt="Banner Preview">
-                            <div class="image-preview-remove">
-                                <i class="material-icons-outlined">close</i>
-                            </div>
-                        `;
-                        preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            preview.remove();
-                            currentBannerUrl = '';
-                        });
-                        previewContainer.appendChild(preview);
-                    }
-                    
-                    renderTags('categories', data.categories || {}, document.getElementById('categories-list'));
-                    renderTags('paymentMethods', data.paymentMethods || {}, document.getElementById('payment-methods-list'));
-                    renderTags('deliveryOptions', data.deliveryOptions || {}, document.getElementById('delivery-options-list'));
-                    
-                    allAdminProducts = data.products ? Object.entries(data.products).map(([id, p]) => ({ id, ...p })) : [];
-                    applyAdminProductFilters();
-                    
-                    populateCategorySelects(data.categories || {});
-                    populateCategoryFilter(data.categories || {});
-                    
-                    // Trigger label animation for pre-filled fields
-                    document.querySelectorAll('input, textarea, select').forEach(el => {
-                       if(el.value) el.nextElementSibling?.classList.add('active');
+                        storesList.appendChild(storeItem);
                     });
-                });
-            }
 
-            document.getElementById('save-store-btn').onclick = () => {
-                update(getDbRef(), {
-                    name: document.getElementById('store-name').value,
-                    description: document.getElementById('store-description').value,
-                    logo: currentBannerUrl,
-                    whatsapp: document.getElementById('store-whatsapp').value,
-                    color: document.getElementById('store-color').value
-                }).then(() => showToast('Informações da loja salvas!'));
-            };
-
-            function setupAddTag(inputId, path) {
-                const input = document.getElementById(inputId);
-                const addButton = input.closest('.input-group').querySelector('button');
-                addButton.onclick = () => {
-                    const value = input.value.trim();
-                    if (value) push(getDbRef(path), value).then(() => input.value = '');
-                };
-            }
-            setupAddTag('new-category-name', 'categories');
-            setupAddTag('new-payment-method-input', 'paymentMethods');
-            setupAddTag('new-delivery-option-input', 'deliveryOptions');
-
-            function renderTags(path, data, container) {
-                container.innerHTML = '';
-                Object.entries(data).forEach(([key, value]) => {
-                    const tag = document.createElement('div');
-                    tag.className = 'tag';
-                    tag.innerHTML = `<span>${value}</span><i class="material-icons-outlined delete-btn">close</i>`;
-                    tag.querySelector('.delete-btn').onclick = () => remove(getDbRef(`${path}/${key}`));
-                    container.appendChild(tag);
-                });
-            }
-
-            function populateCategorySelects(categoriesData) {
-                const selects = [document.getElementById('product-category'), document.getElementById('edit-product-category')];
-                selects.forEach(select => {
-                    const currentVal = select.value;
-                    select.innerHTML = '<option value="" disabled selected></option>';
-                    Object.entries(categoriesData).forEach(([id, name]) => select.innerHTML += `<option value="${id}">${name}</option>`);
-                    select.value = currentVal;
-                });
-            }
-            
-            document.getElementById('add-product-btn').onclick = () => {
-                const product = {
-                    name: document.getElementById('product-name').value,
-                    description: document.getElementById('product-description').value,
-                    price: parseFloat(document.getElementById('product-price').value) || 0,
-                    image: currentProductImageUrl,
-                    category: document.getElementById('product-category').value,
-                    available: document.getElementById('product-available').checked
-                };
-                if(product.name && product.price > 0) {
-                    push(getDbRef('products'), product).then(() => {
-                        ['product-name', 'product-description', 'product-price'].forEach(id => document.getElementById(id).value = '');
-                        document.getElementById('product-category').value = "";
-                        document.getElementById('product-available').checked = true;
-                        document.getElementById('product-image-preview-container').innerHTML = '';
-                        currentProductImageUrl = '';
-                        showToast('Produto adicionado com sucesso!');
-                    });
-                } else { showToast('Nome e preço são obrigatórios.'); }
-            };
-
-            const adminProductSearch = document.getElementById('admin-product-search');
-            const adminCategoryFilter = document.getElementById('admin-product-category-filter');
-            adminProductSearch.addEventListener('input', applyAdminProductFilters);
-            adminCategoryFilter.addEventListener('change', applyAdminProductFilters);
-
-            function populateCategoryFilter(categoriesData) {
-                adminCategoryFilter.innerHTML = '<option value="all" selected>Todas as Categorias</option>';
-                Object.entries(categoriesData).forEach(([id, name]) => adminCategoryFilter.innerHTML += `<option value="${id}">${name}</option>`);
-                adminCategoryFilter.value = 'all'; // Força a seleção inicial
-            }
-
-            function applyAdminProductFilters() {
-                const searchTerm = adminProductSearch.value.toLowerCase();
-                const categoryId = adminCategoryFilter.value;
-                let filtered = [...allAdminProducts];
-                if (searchTerm) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm));
-                if (categoryId !== 'all') filtered = filtered.filter(p => p.category === categoryId);
-                renderAdminProducts(filtered);
-            }
-
-            function renderAdminProducts(products) {
-                const grid = document.getElementById('products-list');
-                grid.innerHTML = '';
-                products.forEach(product => {
-                    const card = document.createElement('div');
-                    card.className = 'admin-product-card';
-                    const badgeHTML = product.available ? '' : `<div class="outofstock-badge">Esgotado</div>`;
-                    card.innerHTML = `
-                        ${badgeHTML}
-                        <div class="admin-product-card__image" style="background-image: url('${product.image || ''}')"></div>
-                        <div class="admin-product-card__info">
-                            <div class="admin-product-card__name">${product.name}</div>
-                            <div class="admin-product-card__price">R$ ${(product.price || 0).toFixed(2).replace('.', ',')}</div>
-                        </div>
-                        <div class="admin-product-card__actions">
-                            <button class="btn-text edit-btn"><i class="material-icons-outlined">edit</i> Editar</button>
-                            <button class="btn-text delete-btn" style="color: var(--md-sys-color-error);"><i class="material-icons-outlined">delete</i> Excluir</button>
-                        </div>
-                    `;
-                    card.querySelector('.edit-btn').onclick = () => showEditModal(product.id, product);
-                    card.querySelector('.delete-btn').onclick = () => {
-                        confirmAction(`Excluir "${product.name}"? Esta ação não pode ser desfeita.`, () => {
-                            remove(getDbRef(`products/${product.id}`));
-                            // Opcional: deletar a imagem do storage também
-                            if (product.image && product.image.includes('firebasestorage')) {
-                                const imageRef = storageRef(storage, product.image);
-                                deleteObject(imageRef).catch(error => {
-                                    console.log('Erro ao deletar imagem:', error);
-                                });
+                    // Adicionar eventos de exclusão
+                    document.querySelectorAll('.delete-store-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const storeId = e.target.dataset.storeid;
+                            if (confirm('Tem certeza que deseja excluir esta loja fixa?')) {
+                                await deleteStore(storeId);
                             }
                         });
-                    };
-                    grid.appendChild(card);
-                });
+                    });
+                    
+                } catch (error) {
+                    console.error('Erro ao carregar lojas:', error);
+                    storesList.innerHTML = '<p style="text-align: center; color: var(--error-color);">Erro ao carregar lojas.</p>';
+                }
             }
 
-            const editModal = document.getElementById('edit-product-modal');
-            function showEditModal(id, product) {
-                document.getElementById('edit-product-id').value = id;
-                document.getElementById('edit-product-name').value = product.name;
-                document.getElementById('edit-product-description').value = product.description;
-                document.getElementById('edit-product-price').value = product.price;
-                document.getElementById('edit-product-category').value = product.category || '';
-                document.getElementById('edit-product-available').checked = product.available;
-                
-                // Configurar preview da imagem existente
-                const previewContainer = document.getElementById('edit-product-image-preview-container');
-                previewContainer.innerHTML = '';
-                currentEditProductImageUrl = product.image || '';
-                
-                if (product.image) {
-                    const preview = document.createElement('div');
-                    preview.className = 'image-preview';
-                    preview.innerHTML = `
-                        <img src="${product.image}" alt="Preview">
-                        <div class="image-preview-remove">
-                            <i class="material-icons-outlined">close</i>
-                        </div>
-                    `;
-                    preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        preview.remove();
-                        currentEditProductImageUrl = '';
-                    });
-                    previewContainer.appendChild(preview);
+            async function deleteStore(storeId) {
+                try {
+                    await database.ref(`fixedStores/${storeId}`).remove();
+                    showAlert('Loja excluída com sucesso!', 'success');
+                    loadFixedStores();
+                } catch (error) {
+                    console.error('Erro ao excluir loja:', error);
+                    showAlert('Erro ao excluir loja: ' + error.message, 'error');
                 }
-                
-                editModal.classList.add('show');
             }
-            document.getElementById('cancel-edit-btn').onclick = () => editModal.classList.remove('show');
-            document.getElementById('save-edit-btn').onclick = () => {
-                const id = document.getElementById('edit-product-id').value;
-                const updatedProduct = {
-                    name: document.getElementById('edit-product-name').value,
-                    description: document.getElementById('edit-product-description').value,
-                    price: parseFloat(document.getElementById('edit-product-price').value) || 0,
-                    image: currentEditProductImageUrl,
-                    category: document.getElementById('edit-product-category').value,
-                    available: document.getElementById('edit-product-available').checked
-                };
-                if (updatedProduct.name && updatedProduct.price > 0) {
-                    update(getDbRef(`products/${id}`), updatedProduct).then(() => {
-                        editModal.classList.remove('show');
-                        showToast('Produto atualizado!');
-                    });
-                } else { showToast('Nome e preço são obrigatórios.'); }
-            };
+
+            function showAlert(message, type) {
+                alertDiv.textContent = message;
+                alertDiv.className = `alert ${type}`;
+                alertDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            function showLoading(loading) {
+                if (loading) {
+                    submitText.style.display = 'none';
+                    submitLoading.style.display = 'inline';
+                    submitBtn.disabled = true;
+                } else {
+                    submitText.style.display = 'inline';
+                    submitLoading.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+            }
+
+            // Inicializar listas vazias
+            updatePaymentMethodsList();
+            updateDeliveryOptionsList();
         });
     </script>
 </body>
