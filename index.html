@@ -534,7 +534,8 @@
             function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
             function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
 
-         function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
+        // ========== COMPRESSÃO COM QUALIDADE MÁXIMA E NITIDEZ ==========
+function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
     return new Promise((resolve, reject) => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -544,45 +545,57 @@
             const originalWidth = img.width;
             const originalHeight = img.height;
             
-            const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
-            let width = Math.round(originalWidth * ratio);
-            let height = Math.round(originalHeight * ratio);
+            // 🎯 DIMENSÕES MAIORES para depois reduzir com mais qualidade
+            let width = originalWidth;
+            let height = originalHeight;
             
-            if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
-                width = originalWidth;
-                height = originalHeight;
+            // Primeiro redimensiona para um tamanho intermediário maior
+            if (originalWidth > maxWidth || originalHeight > maxHeight) {
+                const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
+                width = Math.round(originalWidth * ratio * 1.5); // 1.5x maior
+                height = Math.round(originalHeight * ratio * 1.5);
             }
             
+            // Configurar canvas com dimensões maiores
             canvas.width = width;
             canvas.height = height;
             
+            // 🎯 CONFIGURAÇÕES DE ALTA QUALIDADE PARA NITIDEZ
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, width, height);
+            
+            // 🎯 PRIMEIRO PASSO: Redimensionar com alta qualidade
             ctx.drawImage(img, 0, 0, width, height);
             
-            // 🎯 MÁXIMA QUALIDADE - VALORES AJUSTADOS
-            let quality = 0.90; // Aumentado de 0.85 para 0.90
+            // 🎯 SEGUNDO PASSO: Criar outro canvas para o tamanho final
+            const finalCanvas = document.createElement('canvas');
+            const finalCtx = finalCanvas.getContext('2d');
+            finalCanvas.width = maxWidth;
+            finalCanvas.height = maxHeight;
             
-            // Reduções mínimas apenas para imagens enormes
-            if (file.size > 5 * 1024 * 1024) { // Apenas > 5MB
-                quality = 0.85;
-            } else if (file.size > 2 * 1024 * 1024) {
-                quality = 0.88;
-            } else {
-                quality = 0.92; // Alta qualidade para maioria
-            }
+            // Configurações finais de máxima qualidade
+            finalCtx.imageSmoothingEnabled = true;
+            finalCtx.imageSmoothingQuality = 'high';
+            finalCtx.fillStyle = 'white';
+            finalCtx.fillRect(0, 0, maxWidth, maxHeight);
             
-            // Qualidade extra para produtos
+            // Redesenhar no tamanho final com qualidade máxima
+            finalCtx.drawImage(canvas, 0, 0, width, height, 0, 0, maxWidth, maxHeight);
+            
+            // 🎯 QUALIDADE MÁXIMA - SEM COMPROMISSOS
+            let quality = 0.95; // 95% de qualidade - quase original
+            
+            // Para imagens de produtos, qualidade absoluta
             if (maxWidth <= 200 && maxHeight <= 200) {
-                quality = Math.min(0.95, quality + 0.05);
+                quality = 0.97; // 97% - máxima qualidade
             }
             
-            canvas.toBlob((blob) => {
+            finalCanvas.toBlob((blob) => {
                 if (blob) {
                     const compressionRatio = (blob.size / file.size) * 100;
-                    console.log(`🖼️ COMPRESSÃO HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${width}x${height}, Qualidade: ${quality}`);
+                    console.log(`🖼️ NITIDEZ MÁXIMA: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${maxWidth}x${maxHeight}, Qualidade: ${quality}`);
                     resolve(blob);
                 } else {
                     reject(new Error('Falha na compressão'));
