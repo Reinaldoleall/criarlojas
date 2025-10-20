@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Painel de Administração</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -189,6 +189,19 @@
             transition: width 0.3s ease;
         }
 
+        /* --- Compressão Info --- */
+        .compression-info {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         /* --- Login Page --- */
         .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; background-color: var(--md-sys-color-background); }
         .login-card { width: 100%; max-width: 420px; padding: 40px; text-align: center; }
@@ -284,6 +297,10 @@
                             <div class="image-upload-hint">Tamanho recomendado: 1200x400px</div>
                             <input type="file" id="banner-upload-input" accept="image/*" style="display: none;">
                         </div>
+                        <div class="compression-info">
+                            <i class="material-icons-outlined">info</i>
+                            <span>Imagens serão automaticamente otimizadas para melhor performance</span>
+                        </div>
                         <div id="banner-preview-container" class="image-preview-container"></div>
                         <div id="banner-upload-progress" class="upload-progress" style="display: none;">
                             <div id="banner-progress-bar" class="upload-progress-bar"></div>
@@ -336,8 +353,12 @@
                                 <i class="material-icons-outlined">image</i>
                             </div>
                             <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                            <div class="image-upload-hint">Tamanho recomendado: 600x600px</div>
+                            <div class="image-upload-hint">Será automaticamente redimensionada para 200x200px</div>
                             <input type="file" id="product-image-upload-input" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="compression-info">
+                            <i class="material-icons-outlined">compress</i>
+                            <span>Imagens serão comprimidas para 200x200px (aproximadamente 20-50KB)</span>
                         </div>
                         <div id="product-image-preview-container" class="image-preview-container"></div>
                         <div id="product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -388,8 +409,12 @@
                             <i class="material-icons-outlined">image</i>
                         </div>
                         <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                        <div class="image-upload-hint">Tamanho recomendado: 600x600px</div>
+                        <div class="image-upload-hint">Será automaticamente redimensionada para 200x200px</div>
                         <input type="file" id="edit-product-image-upload-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="compression-info">
+                        <i class="material-icons-outlined">compress</i>
+                        <span>Imagens serão comprimidas para 200x200px (aproximadamente 20-50KB)</span>
                     </div>
                     <div id="edit-product-image-preview-container" class="image-preview-container"></div>
                     <div id="edit-product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -508,13 +533,97 @@
             function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
             function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
 
-            // Configuração de upload de imagens
-            function setupImageUpload(uploadAreaId, fileInputId, previewContainerId, progressContainerId, progressBarId, onUploadComplete) {
+            // ========== FUNÇÃO DE COMPRESSÃO DE IMAGEM ==========
+            function compressImage(file, maxWidth = 200, maxHeight = 200, quality = 0.7) {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        // Calcular novas dimensões mantendo a proporção
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height = Math.round((height * maxWidth) / width);
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width = Math.round((width * maxHeight) / height);
+                                height = maxHeight;
+                            }
+                        }
+                        
+                        // Configurar canvas
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Desenhar imagem comprimida
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Converter para Blob
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                console.log(`Imagem comprimida: ${file.size} → ${blob.size} bytes (${Math.round((blob.size / file.size) * 100)}%)`);
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Falha na compressão da imagem'));
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(file);
+                });
+            }
+
+            // ========== UPLOAD OTIMIZADO COM BUFFER ==========
+            function uploadWithBuffer(file, storageRef, metadata = {}, chunkSize = 64 * 1024) {
+                return new Promise((resolve, reject) => {
+                    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+                    
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            // Progresso do upload
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            console.log(`Upload progress: ${progress.toFixed(2)}%`);
+                        },
+                        (error) => {
+                            console.error('Upload error:', error);
+                            reject(error);
+                        },
+                        () => {
+                            // Upload completo
+                            getDownloadURL(uploadTask.snapshot.ref)
+                                .then((downloadURL) => {
+                                    console.log('Upload completed successfully');
+                                    resolve(downloadURL);
+                                })
+                                .catch(reject);
+                        }
+                    );
+                });
+            }
+
+            // ========== CONFIGURAÇÃO DE UPLOAD DE IMAGENS COM COMPRESSÃO ==========
+            function setupImageUpload(uploadAreaId, fileInputId, previewContainerId, progressContainerId, progressBarId, onUploadComplete, options = {}) {
                 const uploadArea = document.getElementById(uploadAreaId);
                 const fileInput = document.getElementById(fileInputId);
                 const previewContainer = document.getElementById(previewContainerId);
                 const progressContainer = document.getElementById(progressContainerId);
                 const progressBar = document.getElementById(progressBarId);
+                
+                const {
+                    compress = true,
+                    maxWidth = 200,
+                    maxHeight = 200,
+                    quality = 0.7
+                } = options;
                 
                 // Clique para selecionar arquivo
                 uploadArea.addEventListener('click', () => fileInput.click());
@@ -545,7 +654,7 @@
                     }
                 });
                 
-                function handleFileSelect(file) {
+                async function handleFileSelect(file) {
                     if (!file.type.match('image.*')) {
                         showToast('Por favor, selecione apenas imagens.');
                         return;
@@ -554,41 +663,67 @@
                     // Limpar preview anterior
                     previewContainer.innerHTML = '';
                     
-                    // Criar preview local
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        preview.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview">
-                            <div class="image-preview-remove">
-                                <i class="material-icons-outlined">close</i>
-                            </div>
-                        `;
+                    try {
+                        let processedFile = file;
                         
-                        preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            preview.remove();
-                            fileInput.value = '';
-                            onUploadComplete(''); // Limpar URL
-                        });
+                        if (compress) {
+                            showToast('Comprimindo imagem...');
+                            processedFile = await compressImage(file, maxWidth, maxHeight, quality);
+                            showToast(`Imagem comprimida: ${Math.round(file.size/1024)}KB → ${Math.round(processedFile.size/1024)}KB`);
+                        }
                         
-                        previewContainer.appendChild(preview);
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    // Fazer upload para Firebase Storage
-                    uploadImage(file, progressContainer, progressBar, onUploadComplete);
+                        // Criar preview local
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            preview.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview">
+                                <div class="image-preview-remove">
+                                    <i class="material-icons-outlined">close</i>
+                                </div>
+                            `;
+                            
+                            preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                preview.remove();
+                                fileInput.value = '';
+                                onUploadComplete('');
+                            });
+                            
+                            previewContainer.appendChild(preview);
+                        };
+                        reader.readAsDataURL(processedFile);
+                        
+                        // Fazer upload para Firebase Storage
+                        uploadImage(processedFile, progressContainer, progressBar, onUploadComplete);
+                        
+                    } catch (error) {
+                        console.error('Erro no processamento da imagem:', error);
+                        showToast('Erro ao processar imagem. Usando original.');
+                        // Fallback: usar arquivo original
+                        uploadImage(file, progressContainer, progressBar, onUploadComplete);
+                    }
                 }
             }
             
             function uploadImage(file, progressContainer, progressBar, onUploadComplete) {
-                const fileName = `${Date.now()}_${file.name}`;
+                const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
                 const imageRef = getStorageRef(`images/${fileName}`);
-                const uploadTask = uploadBytesResumable(imageRef, file);
+                
+                const metadata = {
+                    contentType: 'image/jpeg',
+                    customMetadata: {
+                        'originalSize': file.size.toString(),
+                        'uploadedAt': new Date().toISOString(),
+                        'compressed': 'true'
+                    }
+                };
                 
                 progressContainer.style.display = 'block';
                 progressBar.style.width = '0%';
+                
+                const uploadTask = uploadBytesResumable(imageRef, file, metadata);
                 
                 uploadTask.on('state_changed',
                     (snapshot) => {
@@ -596,7 +731,16 @@
                         progressBar.style.width = `${progress}%`;
                     },
                     (error) => {
-                        showToast('Erro no upload da imagem: ' + error.message);
+                        console.error('Upload error:', error);
+                        let errorMessage = 'Erro no upload da imagem';
+                        
+                        if (error.code === 'storage/unknown') {
+                            errorMessage = 'Erro de conexão. Verifique sua internet.';
+                        } else if (error.code === 'storage/retry-limit-exceeded') {
+                            errorMessage = 'Tempo limite excedido. Tente novamente.';
+                        }
+                        
+                        showToast(errorMessage);
                         progressContainer.style.display = 'none';
                     },
                     () => {
@@ -604,19 +748,23 @@
                             progressContainer.style.display = 'none';
                             onUploadComplete(downloadURL);
                             showToast('Imagem enviada com sucesso!');
+                        }).catch(error => {
+                            showToast('Erro ao obter URL da imagem');
+                            progressContainer.style.display = 'none';
                         });
                     }
                 );
             }
             
-            // Configurar uploads
+            // Configurar uploads com compressão
             setupImageUpload(
                 'banner-upload-area', 
                 'banner-upload-input', 
                 'banner-preview-container', 
                 'banner-upload-progress', 
                 'banner-progress-bar', 
-                (url) => { currentBannerUrl = url; }
+                (url) => { currentBannerUrl = url; },
+                { compress: true, maxWidth: 800, maxHeight: 400, quality: 0.8 }
             );
             
             setupImageUpload(
@@ -625,7 +773,8 @@
                 'product-image-preview-container', 
                 'product-image-upload-progress', 
                 'product-image-progress-bar', 
-                (url) => { currentProductImageUrl = url; }
+                (url) => { currentProductImageUrl = url; },
+                { compress: true, maxWidth: 200, maxHeight: 200, quality: 0.7 }
             );
             
             setupImageUpload(
@@ -634,7 +783,8 @@
                 'edit-product-image-preview-container', 
                 'edit-product-image-upload-progress', 
                 'edit-product-image-progress-bar', 
-                (url) => { currentEditProductImageUrl = url; }
+                (url) => { currentEditProductImageUrl = url; },
+                { compress: true, maxWidth: 200, maxHeight: 200, quality: 0.7 }
             );
 
             function loadStoreData() {
@@ -755,7 +905,7 @@
             function populateCategoryFilter(categoriesData) {
                 adminCategoryFilter.innerHTML = '<option value="all" selected>Todas as Categorias</option>';
                 Object.entries(categoriesData).forEach(([id, name]) => adminCategoryFilter.innerHTML += `<option value="${id}">${name}</option>`);
-                adminCategoryFilter.value = 'all'; // Força a seleção inicial
+                adminCategoryFilter.value = 'all';
             }
 
             function applyAdminProductFilters() {
@@ -790,7 +940,6 @@
                     card.querySelector('.delete-btn').onclick = () => {
                         confirmAction(`Excluir "${product.name}"? Esta ação não pode ser desfeita.`, () => {
                             remove(getDbRef(`products/${product.id}`));
-                            // Opcional: deletar a imagem do storage também
                             if (product.image && product.image.includes('firebasestorage')) {
                                 const imageRef = storageRef(storage, product.image);
                                 deleteObject(imageRef).catch(error => {
@@ -812,7 +961,6 @@
                 document.getElementById('edit-product-category').value = product.category || '';
                 document.getElementById('edit-product-available').checked = product.available;
                 
-                // Configurar preview da imagem existente
                 const previewContainer = document.getElementById('edit-product-image-preview-container');
                 previewContainer.innerHTML = '';
                 currentEditProductImageUrl = product.image || '';
