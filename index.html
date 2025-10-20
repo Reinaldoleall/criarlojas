@@ -300,7 +300,7 @@
                         </div>
                         <div class="compression-info">
                             <i class="material-icons-outlined">high_quality</i>
-                            <span>Imagem será otimizada mantendo alta qualidade (800x400px)</span>
+                            <span>Imagem será otimizada mantendo máxima nitidez (800x400px)</span>
                         </div>
                         <div id="banner-preview-container" class="image-preview-container"></div>
                         <div id="banner-upload-progress" class="upload-progress" style="display: none;">
@@ -354,12 +354,12 @@
                                 <i class="material-icons-outlined">image</i>
                             </div>
                             <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                            <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com alta qualidade</div>
+                            <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com máxima nitidez</div>
                             <input type="file" id="product-image-upload-input" accept="image/*" style="display: none;">
                         </div>
                         <div class="compression-info">
                             <i class="material-icons-outlined">high_quality</i>
-                            <span>Alta qualidade mantida: 200x200px (50-150KB, qualidade visual preservada)</span>
+                            <span>Máxima nitidez: 200x200px (processamento profissional multi-etapas)</span>
                         </div>
                         <div id="product-image-preview-container" class="image-preview-container"></div>
                         <div id="product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -410,12 +410,12 @@
                             <i class="material-icons-outlined">image</i>
                         </div>
                         <div class="image-upload-text">Clique ou arraste uma imagem aqui</div>
-                        <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com alta qualidade</div>
+                        <div class="image-upload-hint">Será automaticamente otimizada para 200x200px com máxima nitidez</div>
                         <input type="file" id="edit-product-image-upload-input" accept="image/*" style="display: none;">
                     </div>
                     <div class="compression-info">
                         <i class="material-icons-outlined">high_quality</i>
-                        <span>Alta qualidade mantida: 200x200px (50-150KB, qualidade visual preservada)</span>
+                        <span>Máxima nitidez: 200x200px (processamento profissional multi-etapas)</span>
                     </div>
                     <div id="edit-product-image-preview-container" class="image-preview-container"></div>
                     <div id="edit-product-image-upload-progress" class="upload-progress" style="display: none;">
@@ -482,7 +482,6 @@
             const authContainer = document.getElementById('auth-container');
             const appContainer = document.getElementById('app-container');
 
-            // Variáveis para armazenar URLs de imagens
             let currentBannerUrl = '';
             let currentProductImageUrl = '';
             let currentEditProductImageUrl = '';
@@ -534,148 +533,92 @@
             function getDbRef(path = '') { return ref(db, `stores/${currentUser.uid}/${path}`); }
             function getStorageRef(path = '') { return storageRef(storage, `stores/${currentUser.uid}/${path}`); }
 
-        // ========== COMPRESSÃO COM QUALIDADE MÁXIMA E NITIDEZ ==========
-function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
-    return new Promise((resolve, reject) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        
-        img.onload = function() {
-            const originalWidth = img.width;
-            const originalHeight = img.height;
-            
-            // 🎯 DIMENSÕES MAIORES para depois reduzir com mais qualidade
-            let width = originalWidth;
-            let height = originalHeight;
-            
-            // Primeiro redimensiona para um tamanho intermediário maior
-            if (originalWidth > maxWidth || originalHeight > maxHeight) {
-                const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
-                width = Math.round(originalWidth * ratio * 1.5); // 1.5x maior
-                height = Math.round(originalHeight * ratio * 1.5);
-            }
-            
-            // Configurar canvas com dimensões maiores
-            canvas.width = width;
-            canvas.height = height;
-            
-            // 🎯 CONFIGURAÇÕES DE ALTA QUALIDADE PARA NITIDEZ
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, width, height);
-            
-            // 🎯 PRIMEIRO PASSO: Redimensionar com alta qualidade
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 🎯 SEGUNDO PASSO: Criar outro canvas para o tamanho final
-            const finalCanvas = document.createElement('canvas');
-            const finalCtx = finalCanvas.getContext('2d');
-            finalCanvas.width = maxWidth;
-            finalCanvas.height = maxHeight;
-            
-            // Configurações finais de máxima qualidade
-            finalCtx.imageSmoothingEnabled = true;
-            finalCtx.imageSmoothingQuality = 'high';
-            finalCtx.fillStyle = 'white';
-            finalCtx.fillRect(0, 0, maxWidth, maxHeight);
-            
-            // Redesenhar no tamanho final com qualidade máxima
-            finalCtx.drawImage(canvas, 0, 0, width, height, 0, 0, maxWidth, maxHeight);
-            
-            // 🎯 QUALIDADE MÁXIMA - SEM COMPROMISSOS
-            let quality = 0.95; // 95% de qualidade - quase original
-            
-            // Para imagens de produtos, qualidade absoluta
-            if (maxWidth <= 200 && maxHeight <= 200) {
-                quality = 0.97; // 97% - máxima qualidade
-            }
-            
-            finalCanvas.toBlob((blob) => {
-                if (blob) {
-                    const compressionRatio = (blob.size / file.size) * 100;
-                    console.log(`🖼️ NITIDEZ MÁXIMA: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB (${compressionRatio.toFixed(1)}%), ${originalWidth}x${originalHeight} → ${maxWidth}x${maxHeight}, Qualidade: ${quality}`);
-                    resolve(blob);
-                } else {
-                    reject(new Error('Falha na compressão'));
-                }
-            }, 'image/jpeg', quality);
-        };
-        
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-    });
-}
+            // ========== FUNÇÃO PROFISSIONAL PARA MÁXIMA NITIDEZ ==========
+            function processImageForUpload(file, options) {
+                const { maxWidth, maxHeight, quality = 0.92, useWebP = true } = options;
 
-            // ========== COMPRESSÃO AVANÇADA COM WEBP (MAIOR QUALIDADE) ==========
-            function compressImageWebP(file, maxWidth = 200, maxHeight = 200) {
                 return new Promise((resolve, reject) => {
-                    // Verificar suporte a WebP
-                    const canvas = document.createElement('canvas');
-                    const supportsWebP = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-                    
-                    const ctx = canvas.getContext('2d');
                     const img = new Image();
-                    
-                    img.onload = function() {
-                        const originalWidth = img.width;
-                        const originalHeight = img.height;
+                    const objectUrl = URL.createObjectURL(file);
+                    img.src = objectUrl;
+
+                    img.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+
+                        const tempCanvas = document.createElement('canvas');
+                        const tempCtx = tempCanvas.getContext('2d');
                         
-                        const ratio = Math.min(maxWidth / originalWidth, maxHeight / originalHeight);
-                        let width = Math.round(originalWidth * ratio);
-                        let height = Math.round(originalHeight * ratio);
-                        
-                        if (originalWidth <= maxWidth && originalHeight <= maxHeight) {
-                            width = originalWidth;
-                            height = originalHeight;
+                        let currentWidth = img.width;
+                        let currentHeight = img.height;
+
+                        // 1. Redimensionamento em Múltiplos Passos
+                        tempCanvas.width = currentWidth;
+                        tempCanvas.height = currentHeight;
+                        tempCtx.drawImage(img, 0, 0, currentWidth, currentHeight);
+
+                        while (currentWidth > maxWidth * 2 && currentHeight > maxHeight * 2) {
+                            const halfWidth = Math.floor(currentWidth / 2);
+                            const halfHeight = Math.floor(currentHeight / 2);
+                            
+                            const canvas2 = document.createElement('canvas');
+                            canvas2.width = halfWidth;
+                            canvas2.height = halfHeight;
+                            const ctx2 = canvas2.getContext('2d');
+                            ctx2.imageSmoothingQuality = 'high';
+                            ctx2.drawImage(tempCanvas, 0, 0, currentWidth, currentHeight, 0, 0, halfWidth, halfHeight);
+
+                            tempCanvas.width = halfWidth;
+                            tempCanvas.height = halfHeight;
+                            tempCtx.drawImage(canvas2, 0, 0);
+
+                            currentWidth = halfWidth;
+                            currentHeight = halfHeight;
                         }
+
+                        // 2. Redimensionamento Final
+                        const finalCanvas = document.createElement('canvas');
+                        const finalCtx = finalCanvas.getContext('2d');
+
+                        const ratio = Math.min(maxWidth / currentWidth, maxHeight / currentHeight);
+                        const targetWidth = Math.round(currentWidth * ratio);
+                        const targetHeight = Math.round(currentHeight * ratio);
+
+                        finalCanvas.width = targetWidth;
+                        finalCanvas.height = targetHeight;
                         
-                        canvas.width = width;
-                        canvas.height = height;
+                        finalCtx.imageSmoothingEnabled = true;
+                        finalCtx.imageSmoothingQuality = 'high';
+                        finalCtx.drawImage(tempCanvas, 0, 0, currentWidth, currentHeight, 0, 0, targetWidth, targetHeight);
                         
-                        // Configurações de máxima qualidade
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, width, height);
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        const mimeType = supportsWebP ? 'image/webp' : 'image/jpeg';
-                        let quality = supportsWebP ? 0.82 : 0.85; // WebP oferece melhor qualidade com menor tamanho
-                        
-                        // Ajuste fino de qualidade para WebP
-                        if (supportsWebP && maxWidth <= 200) {
-                            quality = 0.80; // WebP mantém qualidade excelente mesmo com compressão
-                        }
-                        
-                        canvas.toBlob((blob) => {
+                        // 3. Exporta para o Formato Ideal
+                        const mimeType = useWebP && finalCanvas.toDataURL('image/webp').startsWith('data:image/webp') ? 'image/webp' : 'image/jpeg';
+                        const finalQuality = mimeType === 'image/webp' ? Math.max(0.85, quality) : Math.max(0.9, quality);
+
+                        finalCanvas.toBlob(blob => {
                             if (blob) {
-                                console.log(`🎯 ${supportsWebP ? 'WebP' : 'JPEG'} HQ: ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB, ${width}x${height}, Qualidade: ${quality}`);
+                                console.log(`🖼️ NITIDEZ MELHORADA (${mimeType}): ${(file.size/1024).toFixed(1)}KB → ${(blob.size/1024).toFixed(1)}KB, ${img.width}x${img.height} → ${targetWidth}x${targetHeight}`);
                                 resolve(blob);
                             } else {
-                                // Fallback para JPEG
-                                canvas.toBlob(resolve, 'image/jpeg', 0.85);
+                                reject(new Error('Falha ao criar o Blob da imagem.'));
                             }
-                        }, mimeType, quality);
+                        }, mimeType, finalQuality);
                     };
-                    
-                    img.onerror = reject;
-                    img.src = URL.createObjectURL(file);
+
+                    img.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        reject(new Error('Falha ao carregar a imagem.'));
+                    };
                 });
             }
 
-            // ========== UPLOAD OTIMIZADO ==========
             function uploadImage(file, progressContainer, progressBar, onUploadComplete) {
                 const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
                 const imageRef = getStorageRef(`images/${fileName}`);
                 
                 const metadata = {
-                    contentType: 'image/jpeg',
+                    contentType: file.type,
                     customMetadata: {
-                        'originalSize': file.size.toString(),
-                        'uploadedAt': new Date().toISOString(),
-                        'compressed': 'high-quality'
+                        'uploadedAt': new Date().toISOString()
                     }
                 };
                 
@@ -691,31 +634,20 @@ function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
                     },
                     (error) => {
                         console.error('Upload error:', error);
-                        let errorMessage = 'Erro no upload';
-                        
-                        if (error.code === 'storage/unknown') {
-                            errorMessage = 'Erro de conexão. Tente novamente.';
-                        } else if (error.code === 'storage/retry-limit-exceeded') {
-                            errorMessage = 'Tempo limite. Tente uma imagem menor.';
-                        }
-                        
-                        showToast(errorMessage);
+                        showToast('Erro no upload. Tente novamente.');
                         progressContainer.style.display = 'none';
                     },
                     () => {
                         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                             progressContainer.style.display = 'none';
                             onUploadComplete(downloadURL);
-                            showToast('✅ Imagem enviada com alta qualidade!');
-                        }).catch(error => {
-                            showToast('Erro ao obter URL da imagem');
-                            progressContainer.style.display = 'none';
+                            showToast('✅ Imagem enviada com máxima nitidez!');
                         });
                     }
                 );
             }
 
-            // ========== CONFIGURAÇÃO DE UPLOAD COM COMPRESSÃO INTELIGENTE ==========
+            // ========== CONFIGURAÇÃO DE UPLOAD COM A NOVA FUNÇÃO ==========
             function setupImageUpload(uploadAreaId, fileInputId, previewContainerId, progressContainerId, progressBarId, onUploadComplete, options = {}) {
                 const uploadArea = document.getElementById(uploadAreaId);
                 const fileInput = document.getElementById(fileInputId);
@@ -731,16 +663,8 @@ function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
                 } = options;
                 
                 uploadArea.addEventListener('click', () => fileInput.click());
-                
-                uploadArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    uploadArea.classList.add('dragover');
-                });
-                
-                uploadArea.addEventListener('dragleave', () => {
-                    uploadArea.classList.remove('dragover');
-                });
-                
+                uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+                uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('dragover'); });
                 uploadArea.addEventListener('drop', (e) => {
                     e.preventDefault();
                     uploadArea.classList.remove('dragover');
@@ -768,33 +692,31 @@ function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
                         let processedFile = file;
                         
                         if (compress) {
-                            showToast('🔄 Otimizando imagem com alta qualidade...');
+                            showToast('🔄 Processando imagem para máxima nitidez...');
                             
-                            if (useWebP) {
-                                processedFile = await compressImageWebP(file, maxWidth, maxHeight);
-                            } else {
-                                processedFile = await compressImageHighQuality(file, maxWidth, maxHeight);
-                            }
+                            processedFile = await processImageForUpload(file, {
+                                maxWidth: maxWidth,
+                                maxHeight: maxHeight,
+                                useWebP: useWebP,
+                                quality: 0.92
+                            });
                             
                             const sizeReduction = Math.round((1 - (processedFile.size / file.size)) * 100);
                             const finalSizeKB = Math.round(processedFile.size / 1024);
                             showToast(`✅ Imagem otimizada! ${finalSizeKB}KB (-${sizeReduction}%)`);
                         }
                         
-                        // Preview em alta qualidade
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const preview = document.createElement('div');
                             preview.className = 'image-preview';
                             preview.innerHTML = `
                                 <img src="${e.target.result}" alt="Preview">
-                                <div class="image-preview-remove">
-                                    <i class="material-icons-outlined">close</i>
-                                </div>
+                                <div class="image-preview-remove"><i class="material-icons-outlined">close</i></div>
                             `;
                             
-                            preview.querySelector('.image-preview-remove').addEventListener('click', (e) => {
-                                e.stopPropagation();
+                            preview.querySelector('.image-preview-remove').addEventListener('click', (ev) => {
+                                ev.stopPropagation();
                                 preview.remove();
                                 fileInput.value = '';
                                 onUploadComplete('');
@@ -808,13 +730,13 @@ function compressImageHighQuality(file, maxWidth = 200, maxHeight = 200) {
                         
                     } catch (error) {
                         console.error('Erro no processamento:', error);
-                        showToast('⚠️ Usando imagem original (qualidade máxima)');
+                        showToast('⚠️ Erro ao otimizar. Usando imagem original.');
                         uploadImage(file, progressContainer, progressBar, onUploadComplete);
                     }
                 }
             }
             
-            // Configurar uploads com alta qualidade
+            // Configurar uploads
             setupImageUpload(
                 'banner-upload-area', 
                 'banner-upload-input', 
